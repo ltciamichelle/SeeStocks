@@ -4,17 +4,17 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 
 const LOCAL_STORAGE_KEY = "seestocks_watchlist";
-const DEFAULT_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"];
+const DEFAULT_SYMBOLS: string[] = [];
 
 export function getLocalWatchlist(): string[] {
-  if (typeof window === "undefined") return DEFAULT_SYMBOLS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) return DEFAULT_SYMBOLS;
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_SYMBOLS;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return DEFAULT_SYMBOLS;
+    return [];
   }
 }
 
@@ -83,7 +83,7 @@ export function useWatchlist() {
       });
       if (res.ok) {
         const data = await res.json();
-        const dbSymbols = Array.isArray(data.symbols) && data.symbols.length > 0 ? data.symbols : DEFAULT_SYMBOLS;
+        const dbSymbols = Array.isArray(data.symbols) ? data.symbols : [];
         setSymbols(dbSymbols);
         saveLocalWatchlist(dbSymbols);
       }

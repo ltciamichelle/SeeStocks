@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { UserButton, SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
+import { UserButton, SignInButton, useAuth } from "@clerk/nextjs";
 import { useWatchlist } from "@/lib/useWatchlist";
 import {
   type StockQuote,
@@ -28,13 +28,15 @@ import {
   Activity,
   Layers,
   Sparkles,
+  Bell,
+  Lock,
 } from "lucide-react";
 
 export default function WatchlistPage() {
   const { isLoaded, isSignedIn } = useAuth();
   const { symbols, isLoading: isWatchlistLoading, removeSymbol, addSymbol } = useWatchlist();
 
-  // Instant SWR state: Pre-seed quotes synchronously so the screen loads with 0ms delay
+  // Instant SWR state: Pre-seed quotes cache synchronously
   const [quotes, setQuotes] = useState<Record<string, StockQuote>>(() => {
     const initial: Record<string, StockQuote> = {};
     for (const sym of ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA"]) {
@@ -47,10 +49,10 @@ export default function WatchlistPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Search/Add input state
-  const [addInput, setAddInput] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState<boolean>(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -88,20 +90,20 @@ export default function WatchlistPage() {
 
   // Debounced search autocomplete
   useEffect(() => {
-    if (!addInput.trim()) {
+    if (!searchQuery.trim()) {
       setSearchResults([]);
-      setShowDropdown(false);
+      setShowSearchDropdown(false);
       return;
     }
 
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(addInput)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
         if (res.ok && Array.isArray(data.results)) {
           setSearchResults(data.results);
-          setShowDropdown(true);
+          setShowSearchDropdown(true);
         }
       } catch {
         // Silently ignore
@@ -111,12 +113,12 @@ export default function WatchlistPage() {
     }, 220);
 
     return () => clearTimeout(timer);
-  }, [addInput]);
+  }, [searchQuery]);
 
   const handleAddSymbol = (sym: string) => {
     addSymbol(sym);
-    setAddInput("");
-    setShowDropdown(false);
+    setSearchQuery("");
+    setShowSearchDropdown(false);
     showToast(`Added ${sym} to your watchlist`);
   };
 
@@ -127,7 +129,7 @@ export default function WatchlistPage() {
 
   // Performance calculations
   const stats = useMemo(() => {
-    const list = symbols.map((s) => quotes[s]).filter(Boolean);
+    const list = symbols.map((s) => quotes[s] || getFallbackQuote(s)).filter(Boolean);
     if (list.length === 0) {
       return { topGainer: null, avgChange: 0, positiveCount: 0 };
     }
@@ -161,74 +163,111 @@ export default function WatchlistPage() {
         </div>
       )}
 
-      {/* Top Navbar (Light Base) */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 py-3.5">
+      {/* ======================================================== */}
+      {/* 1. TOP NAVBAR (MATCHING DASHBOARD HEADER DESIGN)         */}
+      {/* ======================================================== */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 py-3.5 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {/* Brand & Nav Navigation */}
+          {/* Brand & Market Status */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-2xl bg-[#121214] border border-slate-800 text-[#ccff00] flex items-center justify-center font-black text-sm shadow-md group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-2xl bg-[#121214] text-[#ccff00] flex items-center justify-center font-black text-sm shadow-md group-hover:scale-105 transition">
                 SS
               </div>
               <div>
                 <span className="text-lg font-black tracking-tight text-slate-900 block leading-none">
-                  See<span className="text-slate-900">Stocks</span>
+                  SeeStocks
                 </span>
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                  Watchlist Hub
+                  Analytics & Trading
                 </span>
               </div>
             </Link>
 
-            {/* Navigation tabs */}
-            <nav className="hidden sm:flex items-center gap-1.5 bg-slate-100 p-1 rounded-full border border-slate-200/60">
-              <Link
-                href="/"
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-600 hover:text-black hover:bg-white transition-all"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/watchlist"
-                className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#121214] text-[#ccff00] shadow-xs"
-              >
-                My Watchlist
-              </Link>
-            </nav>
+            {/* Live Market Status Pill */}
+            <div className="hidden md:flex items-center gap-2 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full text-xs font-semibold text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Markets Open</span>
+            </div>
           </div>
 
-          {/* Right Action Menu: Cloud Status, Auth */}
-          <div className="flex items-center gap-3">
-            {isLoaded && isSignedIn && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/70 text-xs font-semibold text-emerald-700">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>MongoDB Synced</span>
+          {/* Search Bar (Pill with quick autocomplete) */}
+          <div className="relative flex-1 max-w-md hidden sm:block">
+            <div className="flex items-center bg-[#f4f5f8] rounded-full px-4 py-2 border border-slate-200 focus-within:border-black focus-within:bg-white transition">
+              <Search className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchDropdown(true);
+                }}
+                onFocus={() => setShowSearchDropdown(true)}
+                placeholder='Search stocks e.g. "amazon", "NVDA"...'
+                className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden font-medium"
+              />
+              <span className="text-[10px] font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded-md">
+                /
+              </span>
+            </div>
+
+            {/* Autocomplete Dropdown */}
+            {showSearchDropdown && (searchQuery.trim().length > 0 || searchResults.length > 0) && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-3xl shadow-2xl border border-slate-200 z-50 overflow-hidden p-2">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1.5">
+                  Market Search Results
+                </div>
+                {isSearching ? (
+                  <div className="p-4 text-center text-xs text-slate-500">Searching market symbols...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((res) => (
+                    <button
+                      key={res.symbol}
+                      onClick={() => handleAddSymbol(res.symbol)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl hover:bg-slate-100 transition text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <StockLogo symbol={res.symbol} size={30} />
+                        <div>
+                          <div className="font-bold text-xs text-slate-900">{res.symbol}</div>
+                          <div className="text-[11px] text-slate-500 truncate max-w-[200px]">
+                            {res.description}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-slate-900 flex items-center gap-1 hover:underline">
+                        <Plus className="w-3 h-3" /> Add
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-xs text-slate-500">No matching stocks found.</div>
+                )}
               </div>
             )}
+          </div>
 
-            {loadingQuotes && (
-              <button
-                onClick={() => loadQuotes(symbols)}
-                className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-900 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs"
-              >
-                <RefreshCw className="w-3 h-3 animate-spin text-slate-700" />
-                <span>Syncing</span>
-              </button>
-            )}
-
+          {/* Right Action Menu: Single Dashboard navigation link, Notification Bell, Clerk Auth */}
+          <div className="flex items-center gap-3">
+            {/* Single clean Return to Dashboard Button */}
             <Link
               href="/"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-black transition shadow-2xs"
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-full transition shadow-2xs"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Back to Market</span>
+              <span>Dashboard</span>
             </Link>
+
+            <button className="relative w-9 h-9 rounded-full bg-[#121214] text-white border border-slate-800 shadow-xs flex items-center justify-center hover:border-slate-600 transition">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-[#ccff00] rounded-full animate-pulse" />
+            </button>
 
             {isLoaded && isSignedIn ? (
               <UserButton afterSignOutUrl="/" />
             ) : (
               <SignInButton mode="modal">
-                <button className="text-xs bg-[#121214] hover:bg-black text-white font-bold px-4 py-2 rounded-full transition shadow-xs uppercase tracking-wide">
+                <button className="text-xs bg-[#121214] text-white font-bold px-4 py-2 rounded-full hover:bg-black transition shadow-xs">
                   Sign In
                 </button>
               </SignInButton>
@@ -237,169 +276,157 @@ export default function WatchlistPage() {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* ======================================================== */}
+      {/* 2. MAIN WATCHLIST CONTENT                                */}
+      {/* ======================================================== */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Hero Banner: Neo-Fintech Summary Card (Dark Hero accent) */}
-        <div className="relative overflow-hidden rounded-3xl bg-[#121214] border border-slate-800 p-6 sm:p-8 shadow-xl">
-          {/* Subtle Ambient Glow & Watermark */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
-          <RippleWatermark className="absolute right-4 bottom-4 pointer-events-none opacity-15" size={260} strokeColor="#ccff00" />
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/20 text-xs font-bold text-[#ccff00] uppercase tracking-wider mb-3">
-                <Star className="w-3.5 h-3.5 fill-[#ccff00]" />
-                Personal Portfolio Watchlist
+        {/* Unauthenticated Guest Mode Banner */}
+        {isLoaded && !isSignedIn && (
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 text-slate-600">
+                <Lock className="w-4 h-4" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                Tracked Assets
-              </h1>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-xl font-medium">
-                Consolidated real-time monitoring and technical snapshots across your favorite equities with cloud synchronization.
-              </p>
-            </div>
-
-            {/* Quick Metrics Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-[#18181b] border border-white/5 rounded-2xl p-3.5 min-w-[130px]">
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="w-3 h-3 text-[#ccff00]" /> Symbols
+              <div>
+                <div className="text-xs font-bold text-slate-900">
+                  Guest Mode Active
                 </div>
-                <div className="text-2xl font-black text-white mt-1">
-                  {symbols.length}
-                </div>
-                <div className="text-[10px] text-zinc-500 font-medium mt-0.5">
-                  {stats.positiveCount} Bullish / {symbols.length - stats.positiveCount} Bearish
-                </div>
-              </div>
-
-              <div className="bg-[#18181b] border border-white/5 rounded-2xl p-3.5 min-w-[130px]">
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity className="w-3 h-3 text-[#06b6d4]" /> Avg Change
-                </div>
-                <div
-                  className={`text-2xl font-black mt-1 font-mono ${
-                    stats.avgChange >= 0 ? "text-[#ccff00]" : "text-rose-400"
-                  }`}
-                >
-                  {stats.avgChange >= 0 ? `+${stats.avgChange.toFixed(2)}%` : `${stats.avgChange.toFixed(2)}%`}
-                </div>
-                <div className="text-[10px] text-zinc-500 font-medium mt-0.5">
-                  Overall momentum
-                </div>
-              </div>
-
-              <div className="col-span-2 sm:col-span-1 bg-[#18181b] border border-white/5 rounded-2xl p-3.5 min-w-[130px]">
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <TrendingUp className="w-3 h-3 text-emerald-400" /> Top Performer
-                </div>
-                <div className="text-2xl font-black text-white mt-1">
-                  {stats.topGainer?.symbol || "--"}
-                </div>
-                <div className="text-[10px] text-emerald-400 font-bold font-mono mt-0.5">
-                  {stats.topGainer ? `+${stats.topGainer.changePercent.toFixed(2)}%` : "N/A"}
+                <div className="text-[11px] text-slate-500 font-medium">
+                  Sign in to save your personal watchlist to MongoDB Atlas and access it anywhere.
                 </div>
               </div>
             </div>
+
+            <SignInButton mode="modal">
+              <button className="px-4 py-2 rounded-full bg-[#121214] hover:bg-black text-[#ccff00] text-xs font-bold transition shadow-2xs self-start sm:self-auto shrink-0">
+                Sign In to Sync
+              </button>
+            </SignInButton>
           </div>
+        )}
 
-          {/* Quick Search and Add Bar */}
-          <div className="relative z-10 mt-6 pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <div className="flex items-center bg-[#09090b] rounded-2xl px-4 py-2.5 border border-zinc-800 focus-within:border-[#ccff00] focus-within:ring-2 focus-within:ring-[#ccff00]/15 transition">
-                <Search className="w-4 h-4 text-zinc-400 mr-2.5 shrink-0" />
-                <input
-                  type="text"
-                  value={addInput}
-                  onChange={(e) => setAddInput(e.target.value)}
-                  onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-                  placeholder="Add stock symbol (e.g. NVDA, TSLA, AAPL)..."
-                  className="w-full bg-transparent text-xs text-white placeholder:text-zinc-500 focus:outline-none font-medium"
-                />
-                {isSearching && (
-                  <div className="w-3.5 h-3.5 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin shrink-0" />
-                )}
+        {/* Hero Summary Card: Displays when user has tracked symbols */}
+        {symbols.length > 0 ? (
+          <div className="relative overflow-hidden rounded-3xl bg-[#121214] border border-slate-800 p-6 sm:p-8 shadow-xl">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[#ccff00]/5 rounded-full blur-3xl pointer-events-none" />
+            <RippleWatermark className="absolute right-4 bottom-4 pointer-events-none opacity-15" size={260} strokeColor="#ccff00" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/20 text-xs font-bold text-[#ccff00] uppercase tracking-wider mb-3">
+                  <Star className="w-3.5 h-3.5 fill-[#ccff00]" />
+                  Personal Watchlist
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+                  Tracked Assets
+                </h1>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-xl font-medium">
+                  Real-time market snapshots and performance trends for your watched equities.
+                </p>
               </div>
 
-              {/* Autocomplete Dropdown */}
-              {showDropdown && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-[#121214] rounded-2xl shadow-2xl border border-zinc-800 z-50 overflow-hidden p-2">
-                  <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider px-3 py-1.5">
-                    Symbol Results
+              {/* Quick Metrics Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="bg-[#18181b] border border-white/5 rounded-2xl p-3.5 min-w-[130px]">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-3 h-3 text-[#ccff00]" /> Symbols
                   </div>
-                  {searchResults.map((item) => (
-                    <button
-                      key={item.symbol}
-                      onClick={() => handleAddSymbol(item.symbol)}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-zinc-800 transition text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <StockLogo symbol={item.symbol} size={28} />
-                        <div>
-                          <div className="font-bold text-xs text-white">{item.symbol}</div>
-                          <div className="text-[11px] text-zinc-400 truncate max-w-[200px]">
-                            {item.description}
-                          </div>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold text-[#ccff00] flex items-center gap-1 hover:underline">
-                        <Plus className="w-3 h-3" /> Add
-                      </span>
-                    </button>
-                  ))}
+                  <div className="text-2xl font-black text-white mt-1">
+                    {symbols.length}
+                  </div>
+                  <div className="text-[10px] text-zinc-500 font-medium mt-0.5">
+                    {stats.positiveCount} Up / {symbols.length - stats.positiveCount} Down
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Quick Popular Add Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap text-xs text-zinc-400">
-              <span className="text-[11px] font-semibold text-zinc-400">Popular:</span>
-              {["NVDA", "AAPL", "MSFT", "TSLA", "AMZN"].map((sym) => {
-                const isTracked = symbols.includes(sym);
-                return (
-                  <button
-                    key={sym}
-                    disabled={isTracked}
-                    onClick={() => handleAddSymbol(sym)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition flex items-center gap-1 ${
-                      isTracked
-                        ? "bg-zinc-900/60 text-zinc-600 border border-zinc-800/40 cursor-not-allowed"
-                        : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60 active:scale-95"
+                <div className="bg-[#18181b] border border-white/5 rounded-2xl p-3.5 min-w-[130px]">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="w-3 h-3 text-[#06b6d4]" /> Avg Change
+                  </div>
+                  <div
+                    className={`text-2xl font-black mt-1 font-mono ${
+                      stats.avgChange >= 0 ? "text-[#ccff00]" : "text-rose-400"
                     }`}
                   >
-                    <span>{sym}</span>
-                    {!isTracked && <Plus className="w-2.5 h-2.5 text-[#ccff00]" />}
-                  </button>
-                );
-              })}
+                    {stats.avgChange >= 0 ? `+${stats.avgChange.toFixed(2)}%` : `${stats.avgChange.toFixed(2)}%`}
+                  </div>
+                  <div className="text-[10px] text-zinc-500 font-medium mt-0.5">
+                    Average Return
+                  </div>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 bg-[#18181b] border border-white/5 rounded-2xl p-3.5 min-w-[130px]">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp className="w-3 h-3 text-emerald-400" /> Top Performer
+                  </div>
+                  <div className="text-2xl font-black text-white mt-1">
+                    {stats.topGainer?.symbol || "--"}
+                  </div>
+                  <div className="text-[10px] text-emerald-400 font-bold font-mono mt-0.5">
+                    {stats.topGainer ? `+${stats.topGainer.changePercent.toFixed(2)}%` : "N/A"}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
-        {/* Watchlist Cards Grid (Light Base White Cards) */}
+        {/* Watchlist Content State */}
         {symbols.length === 0 ? (
-          <div className="p-16 text-center rounded-3xl border border-slate-200/80 bg-white shadow-xs">
-            <div className="w-14 h-14 rounded-3xl bg-[#121214] text-[#ccff00] mx-auto flex items-center justify-center mb-4 shadow-sm">
-              <Star className="w-7 h-7 fill-[#ccff00]" />
+          /* Empty / Unauthenticated Initial Watchlist Screen */
+          <div className="p-12 sm:p-16 text-center rounded-3xl border border-slate-200/80 bg-white shadow-xs max-w-3xl mx-auto my-8">
+            <div className="w-16 h-16 rounded-3xl bg-[#121214] text-[#ccff00] mx-auto flex items-center justify-center mb-5 shadow-sm">
+              <Star className="w-8 h-8 fill-[#ccff00]" />
             </div>
-            <h3 className="text-xl font-black text-slate-900">Your watchlist is empty</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6 font-medium">
-              Track tickers, examine interactive trends, and receive cloud sync by adding your primary assets.
+
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              {isSignedIn ? "Your Watchlist is Empty" : "Sign In to Access Your Watchlist"}
+            </h2>
+
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mt-2 mb-6 font-medium leading-relaxed">
+              {isSignedIn
+                ? "You haven't added any stocks to your watchlist yet. Use the search bar above or choose from popular assets below."
+                : "You are currently not signed in. Sign in to save and synchronize your favorite stock tickers, alerts, and trend charts with cloud persistence."}
             </p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {["AAPL", "NVDA", "MSFT", "TSLA"].map((sym) => (
-                <button
-                  key={sym}
-                  onClick={() => handleAddSymbol(sym)}
-                  className="px-4 py-2 rounded-xl bg-[#121214] hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 transition shadow-xs"
-                >
-                  <Plus className="w-3.5 h-3.5 text-[#ccff00]" />
-                  <span>Add {sym}</span>
-                </button>
-              ))}
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
+              {!isSignedIn && (
+                <SignInButton mode="modal">
+                  <button className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#121214] hover:bg-black text-[#ccff00] font-black text-xs uppercase tracking-wider transition shadow-md">
+                    Sign In to SeeStocks
+                  </button>
+                </SignInButton>
+              )}
+
+              <Link
+                href="/"
+                className="w-full sm:w-auto px-5 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
+              >
+                Browse Market Dashboard
+              </Link>
+            </div>
+
+            {/* Quick addition options to test in guest mode */}
+            <div className="pt-6 border-t border-slate-100">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                {isSignedIn ? "Add Popular Equities" : "Or try adding sample equities in guest mode"}
+              </div>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {["AAPL", "NVDA", "MSFT", "TSLA", "AMZN"].map((sym) => (
+                  <button
+                    key={sym}
+                    onClick={() => handleAddSymbol(sym)}
+                    className="px-3.5 py-1.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-2xs"
+                  >
+                    <Plus className="w-3 h-3 text-slate-500" />
+                    <span>{sym}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
+          /* Cards Grid: Rendered when user has added symbols */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {symbols.map((sym) => {
               const q = quotes[sym] || getFallbackQuote(sym);
@@ -504,7 +531,7 @@ export default function WatchlistPage() {
         )}
       </main>
 
-      {/* Footer (Light Base) */}
+      {/* Footer (Matching Dashboard) */}
       <footer className="border-t border-slate-200/80 bg-white py-6 text-center text-xs text-slate-500 flex items-center justify-center gap-2 font-medium">
         <ShieldCheck className="w-4 h-4 text-slate-400" />
         <span>SeeStocks Terminal • Educational analytics, not financial advice</span>
