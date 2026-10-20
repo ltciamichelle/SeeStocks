@@ -77,7 +77,7 @@ interface FallbackStockItem {
   history: HistoryPoint[];
 }
 
-const FALLBACK_STOCKS: FallbackStockItem[] = fallbackDataset.stocks as unknown as FallbackStockItem[];
+export const FALLBACK_STOCKS: FallbackStockItem[] = fallbackDataset.stocks as unknown as FallbackStockItem[];
 const DELAYED_LABEL = "Delayed data";
 const FALLBACK_NOTICE = "Showing sample data.";
 
@@ -100,7 +100,7 @@ function setCached<T>(key: string, data: T): void {
 }
 
 // Fallback lookup helpers
-function getFallbackQuote(symbol: string): StockQuote {
+export function getFallbackQuote(symbol: string): StockQuote {
   const item = FALLBACK_STOCKS.find((s) => s.symbol === symbol) || FALLBACK_STOCKS[0];
   return {
     symbol: item.symbol === symbol ? item.symbol : symbol,
@@ -198,7 +198,7 @@ export async function getQuote(symbol: string): Promise<StockQuote> {
     const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(cleanSymbol)}&apikey=${apiKey}`;
     const res = await fetch(url, {
       next: { revalidate: 300 },
-      signal: AbortSignal.timeout(6500),
+      signal: AbortSignal.timeout(2500),
     });
 
     if (res.status === 429) {
@@ -279,7 +279,7 @@ export async function getHistory(
 
     const res = await fetch(url, {
       next: { revalidate: 300 },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(2500),
     });
 
     if (res.status === 429) {
@@ -469,7 +469,7 @@ export async function getBatchQuotes(symbols: string[]): Promise<Record<string, 
 
     const res = await fetch(url, {
       next: { revalidate: 300 },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(2500),
     });
 
     if (res.status === 429 || !res.ok) {

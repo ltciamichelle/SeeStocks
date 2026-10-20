@@ -29,17 +29,23 @@ export function saveLocalWatchlist(symbols: string[]): void {
 
 export function useWatchlist() {
   const { isLoaded, isSignedIn, userId } = useAuth();
-  const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Initialize synchronously with localStorage so there is ZERO delay / no blank screen
+  const [symbols, setSymbols] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      return getLocalWatchlist();
+    }
+    return DEFAULT_SYMBOLS;
+  });
+  // Never block the screen with a spinner if local symbols exist
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const hasMergedRef = useRef<boolean>(false);
 
   // Sync / Load logic
   const loadWatchlist = useCallback(async () => {
-    setIsLoading(true);
     setError(null);
 
-    // If logged out or auth not loaded, use localStorage
+    // If logged out or auth not loaded, sync with localStorage
     if (!isSignedIn) {
       const local = getLocalWatchlist();
       setSymbols(local);
@@ -47,7 +53,7 @@ export function useWatchlist() {
       return;
     }
 
-    // User is logged in: Check for local list to merge into MongoDB
+    // User is logged in: Non-blocking background sync with MongoDB Atlas
     try {
       const localList = getLocalWatchlist();
 
@@ -57,34 +63,33 @@ export function useWatchlist() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ symbols: localList }),
+          signal: AbortSignal.timeout(3000),
         });
 
         if (mergeRes.ok) {
           const data = await mergeRes.json();
-          setSymbols(data.symbols || localList);
+          if (Array.isArray(data.symbols) && data.symbols.length > 0) {
+            setSymbols(data.symbols);
+            saveLocalWatchlist(data.symbols);
+          }
           hasMergedRef.current = true;
-          // Clean/update local storage to match synced list
-          saveLocalWatchlist(data.symbols || localList);
-          setIsLoading(false);
           return;
         }
       }
 
-      // Fetch saved list from database
-      const res = await fetch("/api/watchlist");
+      // Fetch saved list from database with fast timeout
+      const res = await fetch("/api/watchlist", {
+        signal: AbortSignal.timeout(3000),
+      });
       if (res.ok) {
         const data = await res.json();
         const dbSymbols = Array.isArray(data.symbols) && data.symbols.length > 0 ? data.symbols : DEFAULT_SYMBOLS;
         setSymbols(dbSymbols);
         saveLocalWatchlist(dbSymbols);
-      } else {
-        // Fallback to local on API failure
-        setSymbols(getLocalWatchlist());
       }
     } catch (err: unknown) {
-      console.warn("Watchlist fetch error:", err);
-      setSymbols(getLocalWatchlist());
-      setError(err instanceof Error ? err.message : "Failed to sync watchlist.");
+      console.warn("Watchlist background sync notice:", err);
+      // Retain local list smoothly
     } finally {
       setIsLoading(false);
     }

@@ -282,15 +282,18 @@ export default function StockDashboard() {
           <div className="flex items-center gap-3">
             <Link
               href="/watchlist"
-              className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 px-3.5 py-2 rounded-full hover:bg-slate-50 transition shadow-2xs"
+              className="flex items-center gap-2 text-xs font-bold text-white bg-[#121214] hover:bg-black border border-slate-800 hover:border-[#ccff00]/60 px-4 py-2 rounded-full transition-all shadow-md group"
             >
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span>Watchlist ({watchlistSymbols.length})</span>
+              <Star className="w-3.5 h-3.5 text-[#ccff00] fill-[#ccff00] group-hover:scale-110 transition-transform" />
+              <span>Watchlist</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#ccff00] text-black text-[10px] font-black">
+                {watchlistSymbols.length}
+              </span>
             </Link>
 
-            <button className="relative w-9 h-9 rounded-full bg-white border border-slate-200 shadow-2xs flex items-center justify-center text-slate-600 hover:text-black">
+            <button className="relative w-9 h-9 rounded-full bg-[#121214] text-white border border-slate-800 shadow-xs flex items-center justify-center hover:border-slate-600 transition">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#f43f5e] rounded-full" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-[#ccff00] rounded-full animate-pulse" />
             </button>
 
             {isLoaded && isSignedIn ? (

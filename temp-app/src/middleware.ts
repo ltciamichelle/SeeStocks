@@ -4,7 +4,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
 const isPlaceholder = !pubKey || pubKey.startsWith("pk_test_placeholder");
 
-const isProtectedRoute = createRouteMatcher(["/watchlist(.*)"]);
+const isProtectedRoute = createRouteMatcher([]);
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
