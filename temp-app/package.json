@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.17",
+    "lucide-react": "^1.59.0",
     "mongodb": "^7.7.0",
     "mongoose": "^9.11.2",
     "next": "15.5.28",
