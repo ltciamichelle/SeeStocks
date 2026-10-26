@@ -30,11 +30,12 @@ import {
   Sparkles,
   Bell,
   Lock,
+  AlertCircle,
 } from "lucide-react";
 
 export default function WatchlistPage() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { symbols, isLoading: isWatchlistLoading, removeSymbol, addSymbol } = useWatchlist();
+  const { symbols, isLoading: isWatchlistLoading, removeSymbol, addSymbol, statusNotice } = useWatchlist();
 
   // Instant SWR state: Pre-seed quotes cache synchronously
   const [quotes, setQuotes] = useState<Record<string, StockQuote>>(() => {
@@ -156,10 +157,21 @@ export default function WatchlistPage() {
   return (
     <div className="min-h-screen bg-[#f1f3f7] text-slate-900 flex flex-col font-sans selection:bg-[#ccff00] selection:text-black">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-[#121214] text-[#ccff00] border border-white/10 px-4 py-2.5 rounded-full shadow-2xl text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#ccff00]" />
-          <span>{toastMessage}</span>
+      {(toastMessage || statusNotice) && (
+        <div
+          role="status"
+          className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full shadow-2xl text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 border ${
+            statusNotice?.type === "warning"
+              ? "bg-amber-950 text-amber-200 border-amber-600/60"
+              : "bg-[#121214] text-[#ccff00] border-white/10"
+          }`}
+        >
+          {statusNotice?.type === "warning" ? (
+            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5 text-[#ccff00]" />
+          )}
+          <span>{statusNotice ? statusNotice.message : toastMessage}</span>
         </div>
       )}
 
@@ -264,7 +276,7 @@ export default function WatchlistPage() {
             </button>
 
             {isLoaded && isSignedIn ? (
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             ) : (
               <SignInButton mode="modal">
                 <button className="text-xs bg-[#121214] text-white font-bold px-4 py-2 rounded-full hover:bg-black transition shadow-xs">

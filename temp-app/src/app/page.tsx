@@ -32,6 +32,7 @@ import {
   Flame,
   Globe,
   Radio,
+  AlertCircle,
 } from "lucide-react";
 
 const TIMEFRAMES = ["1D", "5D", "1W", "1M", "3M", "1Y"];
@@ -49,7 +50,7 @@ const DEFAULT_ACTIVITIES = [
 export default function StockDashboard() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
-  const { symbols: watchlistSymbols, addSymbol, removeSymbol } = useWatchlist();
+  const { symbols: watchlistSymbols, addSymbol, removeSymbol, statusNotice } = useWatchlist();
 
   // Selected Stock & Range
   const [selectedSymbol, setSelectedSymbol] = useState<string>("MSFT");
@@ -297,7 +298,7 @@ export default function StockDashboard() {
             </button>
 
             {isLoaded && isSignedIn ? (
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             ) : (
               <SignInButton mode="modal">
                 <button className="text-xs bg-[#121214] text-white font-bold px-4 py-2 rounded-full hover:bg-black transition shadow-xs">
@@ -314,6 +315,25 @@ export default function StockDashboard() {
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-[#121214] text-[#ccff00] font-bold text-xs px-5 py-2.5 rounded-full shadow-2xl border border-slate-700 flex items-center gap-2 animate-in fade-in zoom-in-95">
           <Check className="w-4 h-4 text-[#ccff00]" />
           <span>{tradeNotice}</span>
+        </div>
+      )}
+
+      {/* Watchlist Status Notification Toast */}
+      {statusNotice && (
+        <div
+          role="status"
+          className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 font-bold text-xs px-5 py-2.5 rounded-full shadow-2xl border flex items-center gap-2 animate-in fade-in zoom-in-95 transition-all ${
+            statusNotice.type === "success"
+              ? "bg-[#121214] text-[#ccff00] border-slate-700"
+              : "bg-amber-950 text-amber-200 border-amber-600/60"
+          }`}
+        >
+          {statusNotice.type === "success" ? (
+            <Check className="w-4 h-4 text-[#ccff00]" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-amber-400" />
+          )}
+          <span>{statusNotice.message}</span>
         </div>
       )}
 
