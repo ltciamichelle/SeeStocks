@@ -50,7 +50,7 @@ export default function MarketNewsCard({ news = DEFAULT_NEWS }: { news?: NewsIte
           href={item.url || "#"}
           target={item.url && item.url !== "#" ? "_blank" : undefined}
           rel="noreferrer"
-          className="block bg-white rounded-3xl p-5 shadow-xs border border-slate-100 hover:shadow-md transition group"
+          className="block bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-100 hover:shadow-md transition group"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -58,11 +58,11 @@ export default function MarketNewsCard({ news = DEFAULT_NEWS }: { news?: NewsIte
                 {item.symbol}{" "}
                 <span className="font-normal text-slate-400">({item.companyName})</span>
               </span>
-              <p className="text-sm font-medium text-slate-700 mt-2 line-clamp-2 leading-relaxed group-hover:text-black transition">
+              <p className="text-xs sm:text-sm font-medium text-slate-700 mt-2 line-clamp-2 leading-relaxed group-hover:text-black transition">
                 &ldquo;{item.headline}&rdquo;
               </p>
             </div>
-            <StockLogo symbol={item.symbol} size={38} className="shrink-0" />
+            <StockLogo symbol={item.symbol} size={36} className="shrink-0" />
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-400 mt-4 pt-3 border-t border-slate-100 font-medium">

@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   title: "SeeStocks - Stock Market Tracker & Analytics",
   description:
     "Track real-time and delayed market quotes, manage user watchlists with Clerk authentication and MongoDB Atlas, search symbols, and view historical stock trends.",
+  icons: {
+    icon: "/seestock-logo.png",
+    apple: "/seestock-logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +30,7 @@ export default function RootLayout({
     <ClerkProvider appearance={clerkAppearance}>
       <html lang="en">
         <body
-          className={`${inter.variable} font-sans antialiased bg-[#f1f3f7] text-slate-900 min-h-screen selection:bg-[#ccff00] selection:text-black`}
+          className={`${inter.variable} ${inter.className} font-sans antialiased bg-[#f1f3f7] text-slate-900 min-h-screen selection:bg-[#ccff00] selection:text-black`}
         >
           {children}
         </body>

@@ -2,6 +2,7 @@ import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, Star, TrendingUp } from "lucide-react";
 import RippleWatermark from "@/components/RippleWatermark";
+import BrandLogo from "@/components/BrandLogo";
 import { clerkAppearance } from "@/lib/clerkAppearance";
 
 export default function SignInPage() {
@@ -35,11 +36,7 @@ export default function SignInPage() {
       {/* Brand header */}
       <div className="mb-6 text-center z-10">
         <Link href="/" className="inline-flex items-center gap-2.5 mb-2 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#121214] to-[#27272a] border border-[#ccff00]/30 flex items-center justify-center shadow-lg shadow-[#ccff00]/10 group-hover:border-[#ccff00] transition-colors">
-            <svg className="w-5 h-5 text-[#ccff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-          </div>
+          <BrandLogo size={42} glow className="group-hover:scale-105 transition-transform" />
           <span className="font-black text-2xl tracking-tight text-white flex items-center gap-1">
             See<span className="text-[#ccff00]">Stocks</span>
           </span>

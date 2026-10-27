@@ -1,5 +1,6 @@
 import React from "react";
 import RippleWatermark from "./RippleWatermark";
+import BrandLogo from "./BrandLogo";
 
 interface SplitPortfolioCardProps {
   totalInvest?: number;
@@ -13,11 +14,14 @@ export default function SplitPortfolioCard({
   dateStr = "December 21, 2026",
 }: SplitPortfolioCardProps) {
   return (
-    <div className="rounded-3xl overflow-hidden shadow-xl border border-slate-800/20">
+    <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border border-slate-800/20">
       {/* Top Banner: Electric Lime */}
-      <div className="relative bg-[#ccff00] text-black px-6 py-4 flex items-center justify-between font-semibold">
-        <span className="text-base tracking-tight font-bold">Your Portfolio</span>
-        <span className="text-xs bg-black/10 px-3 py-1 rounded-full font-medium">
+      <div className="relative bg-[#ccff00] text-black px-5 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between font-semibold">
+        <div className="flex items-center gap-2">
+          <BrandLogo size={22} className="rounded-md" />
+          <span className="text-sm sm:text-base tracking-tight font-bold">Your Portfolio</span>
+        </div>
+        <span className="text-[11px] sm:text-xs bg-black/10 px-2.5 sm:px-3 py-1 rounded-full font-semibold">
           {dateStr}
         </span>
       </div>

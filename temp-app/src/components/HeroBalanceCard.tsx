@@ -17,11 +17,9 @@ export default function HeroBalanceCard({
   onWithdraw,
   onTransfer,
 }: HeroBalanceCardProps) {
-  const [activeAction, setActiveAction] = useState<string>("transfer");
   const [modalNotice, setModalNotice] = useState<string | null>(null);
 
   const handleAction = (type: string, callback?: () => void) => {
-    setActiveAction(type);
     if (callback) {
       callback();
     } else {
@@ -31,14 +29,14 @@ export default function HeroBalanceCard({
   };
 
   return (
-    <div className="relative overflow-hidden bg-[#121214] text-white rounded-3xl p-6 shadow-xl border border-slate-800/80">
+    <div className="relative overflow-hidden bg-[#121214] text-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xl border border-slate-800/80">
       {/* Ripple Watermark Pattern */}
       <RippleWatermark className="absolute right-0 bottom-0 pointer-events-none opacity-20" size={240} />
 
       {/* Balance Section */}
       <div className="relative z-10 text-center pt-2 pb-5">
-        <p className="text-slate-400 text-sm font-medium tracking-wide">Your Balance</p>
-        <h1 className="text-4xl font-extrabold tracking-tight mt-1 text-white">
+        <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide">Your Balance</p>
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1 text-white">
           ${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </h1>
       </div>

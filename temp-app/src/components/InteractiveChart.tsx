@@ -148,9 +148,9 @@ export default function InteractiveChart({ points, symbol = "MSFT" }: Interactiv
   }, [samplePoints]);
 
   return (
-    <div ref={containerRef} className="relative w-full bg-white rounded-3xl p-5 shadow-xs border border-slate-100">
+    <div ref={containerRef} className="relative w-full bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-xs border border-slate-100">
       {/* SVG Canvas */}
-      <div className="relative w-full aspect-[16/9] min-h-[260px]">
+      <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] min-h-[220px] sm:min-h-[260px] touch-none">
         <svg
           viewBox="0 0 600 320"
           className="w-full h-full cursor-crosshair select-none"
@@ -274,11 +274,14 @@ export default function InteractiveChart({ points, symbol = "MSFT" }: Interactiv
           <div
             className="absolute pointer-events-none transition-all duration-100 transform -translate-x-1/2 -translate-y-full"
             style={{
-              left: `${(activeCoord.x / 600) * 100}%`,
-              top: `${Math.max(20, (activeCoord.y / 320) * 100 - 8)}%`,
+              left: `${Math.max(16, Math.min(84, (activeCoord.x / 600) * 100))}%`,
+              top: `${Math.max(18, (activeCoord.y / 320) * 100 - 8)}%`,
             }}
           >
             <div className="bg-[#121214] text-white rounded-2xl px-3.5 py-2.5 shadow-xl border border-slate-700/50 text-xs min-w-[130px]">
+              <div className="text-[10px] text-[#06b6d4] font-bold uppercase tracking-wider mb-1">
+                {symbol}
+              </div>
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span>Open ▲</span>
                 <span className="font-semibold text-white ml-2">
