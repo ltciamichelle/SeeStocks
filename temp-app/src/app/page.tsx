@@ -474,7 +474,6 @@ export default function StockDashboard() {
               <SplitPortfolioCard
                 totalInvest={portfolioTotal}
                 gainPercent={14.31}
-                dateStr="December 21, 2026"
               />
             </div>
 
